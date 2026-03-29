@@ -56,7 +56,9 @@ dependencies {
 
     // IntelliJ Platform Gradle Plugin Dependencies Extension - read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-dependencies-extension.html
     intellijPlatform {
-        create(properties("platformType"), properties("platformVersion"))
+        // Disabling the installer dependency since IntelliJ 253 (2025.3.x) and potentially other
+        // early access/snapshot versions may lack direct installer packages in the artifact repositories.
+        create(properties("platformType"), properties("platformVersion"), useInstaller = false)
 
         // Plugin Dependencies. Uses `platformBundledPlugins` property from the gradle.properties file for bundled IntelliJ Platform plugins.
         // starting from 2024.3, all json related code is know on its own plugin
@@ -110,8 +112,20 @@ dependencies {
 // Set the JVM language level used to build the project.
 kotlin {
     jvmToolchain {
-        languageVersion = JavaLanguageVersion.of(17)
+        languageVersion = JavaLanguageVersion.of(21)
         vendor = JvmVendorSpec.JETBRAINS
+    }
+}
+
+// Maintain compatibility with Java 17 runtimes, ensuring the built plugin 
+// can run on older IDEs even though the toolchain uses Java 21 for the 253 platform.
+tasks.withType<JavaCompile> {
+    options.release.set(17)
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
     }
 }
 
@@ -158,10 +172,10 @@ intellijPlatform {
         verificationReportsFormats = listOf(MARKDOWN, PLAIN)
         ides {
             select {
-                types = listOf(IntelliJPlatformType.IntellijIdeaCommunity)
+                types = listOf(IntelliJPlatformType.IntellijIdea)
                 channels = listOf(ProductRelease.Channel.RELEASE) // Only stable releases
                 sinceBuild = "242" // From your minimum supported version
-                untilBuild = "252.*" // Up to current major version
+                untilBuild = "253.*" // Up to current major version
             }
         }
     }
