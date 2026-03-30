@@ -2,7 +2,6 @@ name: Check IJ 2026.1
 
 on:
   push:
-    branches: [ main ]
   pull_request:
 
 jobs:

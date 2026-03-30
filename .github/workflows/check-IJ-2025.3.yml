@@ -2,7 +2,6 @@ name: Check IJ 2025.3
 
 on:
   push:
-    branches: [ main ]
   pull_request:
 
 jobs:
