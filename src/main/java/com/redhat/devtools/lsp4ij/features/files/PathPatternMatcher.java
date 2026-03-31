@@ -22,7 +22,10 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.nio.file.FileSystem;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Path pattern matcher.
@@ -31,7 +34,7 @@ public class PathPatternMatcher {
 
     private final @NotNull String pattern;
     private final @Nullable Path basePath;
-    private List<PathMatcher> pathMatchers;
+    private final @NotNull Map<FileSystem, List<PathMatcher>> fsPathMatchers = new ConcurrentHashMap<>();
     public PathPatternMatcher(@NotNull String pattern,
                               @Nullable Path basePath) {
         this.pattern = pattern;
@@ -54,7 +57,7 @@ public class PathPatternMatcher {
 
         if (firstGlobChar == -1) {
             // No glob characters, treat entire string as pattern
-            return new PathPatternMatcher(fullPattern, null);
+            return new PathPatternMatcher(fullPattern, defaultBasePath);
         }
 
         if (firstGlobChar == 0) {
@@ -236,12 +239,12 @@ public class PathPatternMatcher {
         if (pattern.isEmpty()) {
             return false;
         }
-        if (pathMatchers == null) {
-            createPathMatchers();
-        }
         try {
             path = path == null ? Paths.get(uri) : path;
-            for (PathMatcher pathMatcher : pathMatchers) {
+            // New IjentWslNioPath introduced in IJ 262 will only compare with other instances of IjentWslNioPath, which is likely a bug.
+            // So we must create matchers using the incoming path's FileSystem for compatibility.
+            List<PathMatcher> matchers = fsPathMatchers.computeIfAbsent(path.getFileSystem(), this::createMatchersFor);
+            for (PathMatcher pathMatcher : matchers) {
                 try {
                     if (pathMatcher.matches(path)) {
                         return true;
@@ -256,24 +259,21 @@ public class PathPatternMatcher {
         return false;
     }
 
-    private synchronized void createPathMatchers() {
-        if (pathMatchers != null) {
-            return;
-        }
+    private List<PathMatcher> createMatchersFor(FileSystem fs) {
         String glob = pattern.replace("\\", "/");
         // As Java NIO glob doesn't support **/, /** as optional
         // we need to expand the pattern, ex: **/foo -> foo, **/foo.
         List<String> expandedPatterns = expandPatterns(glob);
-        List<PathMatcher> pathMatchers = new ArrayList<>();
+        List<PathMatcher> matchers = new ArrayList<>();
         for (var expandedPattern : expandedPatterns) {
             try {
-                PathMatcher pathMatcher = FileSystems.getDefault().getPathMatcher("glob:" + expandedPattern);
-                pathMatchers.add(pathMatcher);
+                PathMatcher pathMatcher = fs.getPathMatcher("glob:" + expandedPattern);
+                matchers.add(pathMatcher);
             } catch (Exception e) {
                 // Do nothing
             }
         }
-        this.pathMatchers = pathMatchers;
+        return matchers;
     }
 
     @Override
@@ -283,9 +283,6 @@ public class PathPatternMatcher {
         }
 
         if (obj instanceof PathPatternMatcher other) {
-            if (!Objects.deepEquals(pathMatchers, other.pathMatchers)) {
-                return false;
-            }
             return Objects.equals(pattern, other.getPattern());
         }
         return false;

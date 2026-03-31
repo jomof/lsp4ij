@@ -1,7 +1,7 @@
 [versions]
 # libraries
 junit = "4.13.2"
-junit-jupiter = "5.10.3"
+junit-jupiter = "5.11.0"
 
 # plugins
 testlogger = "3.2.0"

@@ -20,6 +20,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
 import java.net.URI;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import static org.junit.Assert.assertFalse;
@@ -216,8 +217,8 @@ public class FileSystemWatcherManagerTest {
         assertMatchFile(getBaseUri() + "src/foo.ts"); // "file:///C:/src/foo.ts"
 
         // Match c:/Users/X/foo/lib/**
-        assertNoMatchFile(getBaseUri() + "Users/X/lib/bar.jar"); // file:///C:/Users/X/lib/bar.jar
-        assertMatchFile(getBaseUri() + "Users/X/foo/lib/bar.jar"); // file:///C:/Users/X/foo/lib/bar.jar
+        assertNoMatchFile(getBaseUri() + "Users/X/lib/bar.bin");
+        assertMatchFile(getBaseUri() + "Users/X/foo/lib/bar.bin");
 
         // Match "**/.settings
         assertNoMatchFile(getBaseUri() + "foo.ts"); // file:///C:/foo.ts

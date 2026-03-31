@@ -378,9 +378,8 @@ public class FileSystemWatcherManager {
                 if (matcher.matches(relativePath)) {
                     return true;
                 }
-            } else {
-                // ex: "globPattern": "C:\\Users\\XXX\\IdeaProjects\\test-rust/**/*.rs"
-                // Apply the matcher to the path
+            } else if (matcher.getBasePath() == null) {
+                // Only fall back to full path matching if there is no base path
                 if (matcher.matches(path)) {
                     return true;
                 }
@@ -420,8 +419,18 @@ public class FileSystemWatcherManager {
         }
 
         // Compute for the first time
-        if (path.startsWith(basePath)) {
-            var relativePath = basePath.relativize(path);
+        Path resolvedBasePath = basePath;
+        if (!basePath.isAbsolute() && this.basePath != null) {
+            resolvedBasePath = this.basePath.resolve(basePath);
+        }
+
+        // New IjentWslNioPath introduced in IJ 262 will only compare with other instances of IjentWslNioPath, which is likely a bug.
+        // So we resolve the string representation of our base path against the incoming path's FileSystem to avoid this.
+        resolvedBasePath = path.getFileSystem().getPath(resolvedBasePath.toString());
+
+        boolean startsWith = path.startsWith(resolvedBasePath);
+        if (startsWith) {
+            var relativePath = resolvedBasePath.relativize(path);
             basePathToRelativePath.put(basePath, Either.forLeft(relativePath)); // Cache positive result
             return relativePath;
         }

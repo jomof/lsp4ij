@@ -107,6 +107,7 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.junit.jupiter.api)
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.11.0")
 }
 
 // Set the JVM language level used to build the project.
@@ -175,7 +176,7 @@ intellijPlatform {
                 types = listOf(IntelliJPlatformType.IntellijIdea)
                 channels = listOf(ProductRelease.Channel.RELEASE) // Only stable releases
                 sinceBuild = "242" // From your minimum supported version
-                untilBuild = "253.*" // Up to current major version
+                untilBuild = "261.*" // Up to current major version
             }
         }
     }
@@ -226,6 +227,9 @@ tasks.withType<Test> {
     systemProperty("idea.log.leaked.projects.in.tests", "false")
     systemProperty( "idea.maven.test.mirror", "https://repo1.maven.org/maven2")
     systemProperty( "com.redhat.devtools.intellij.telemetry.mode", "disabled")
+    javaLauncher.set(javaToolchains.launcherFor {
+        languageVersion.set(JavaLanguageVersion.of(21))
+    })
 }
 
 // Configure Gradle Kover Plugin - read more: https://github.com/Kotlin/kotlinx-kover#configuration
