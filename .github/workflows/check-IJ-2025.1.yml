@@ -1,0 +1,51 @@
+name: Check IJ 2025.1
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check-2025-1:
+    name: Check against 2025.1
+    runs-on: ubuntu-latest
+    steps:
+
+      # Free GitHub Actions Environment Disk Space (Good practice for heavy builds)
+      - name: Maximize Build Space
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be
+        with:
+          tool-cache: false
+          large-packages: false
+
+      # Check out current repository
+      - name: Fetch Sources
+        uses: actions/checkout@v4
+
+      # Set up Java environment (Java 21 required for newer platforms)
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: 21
+          cache: 'gradle'
+
+      # Setup Gradle
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # Build the plugin using the platformVersion property
+      - name: Build against 2025.1
+        run: ./gradlew buildPlugin -PplatformVersion=2025.1
+
+      # Run tests using the platformVersion property
+      - name: Run tests against 2025.1
+        run: ./gradlew test -PplatformVersion=2025.1
+
+      # Report test count
+      - name: Report Test Count
+        if: always()
+        run: python3 .github/scripts/report_test_count.py "2025.1"
+
+      # Validate against the platform using the Plugin Verifier
+      - name: Validate against 2025.1
+        run: ./gradlew verifyPlugin -PplatformVersion=2025.1
